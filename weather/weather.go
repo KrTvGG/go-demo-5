@@ -2,17 +2,26 @@ package weather
 
 import (
 	"demo/weather/geo"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 )
 
-func GetWeather(geo geo.GeoData, format int) string {
+var ErrorWrongFormat = errors.New("WRONG_FORMAT")
+var ErrorUrl = errors.New("ERROR_URL")
+var ErrorHTTP = errors.New("ERROR_HTTP")
+var ErrorReadBody = errors.New("ERROR_READBORY")
+
+func GetWeather(geo geo.GeoData, format int) (string, error) {
+	if format < 1 || format > 4 {
+		return "", ErrorWrongFormat
+	}
 	baseUrl, err := url.Parse("https://wttr.in/" + geo.City)
 	if err != nil {
 		fmt.Println(err.Error())
-		return ""
+		return "", ErrorUrl
 	}
 	params := url.Values{}
 	params.Add("format", fmt.Sprint(format))
@@ -20,16 +29,12 @@ func GetWeather(geo geo.GeoData, format int) string {
 	resp, err := http.Get(baseUrl.String())
 	if err != nil {
 		fmt.Println(err.Error())
-		return ""
-	}
-	if resp.StatusCode != 200 {
-		fmt.Println("Не 200")
-		return ""
+		return "", ErrorHTTP
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err.Error())
-		return ""
+		return "", ErrorReadBody
 	}
-	return string(body)
+	return string(body), nil
 }
